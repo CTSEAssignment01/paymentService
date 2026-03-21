@@ -21,7 +21,3 @@ stripe:
   success-url: http://localhost:5173/success
   cancel-url: http://localhost:5173/cancel
   default-currency: usd
-
-payment:
-  security:
-    internal-api-key: test-internal-key
