@@ -33,7 +33,7 @@ steps:
       - "managed"
       - "--allow-unauthenticated"
       - "--port"
-      - "8080"
+      - "8085"
       - "--memory"
       - "512Mi"
       - "--cpu"
@@ -43,7 +43,7 @@ steps:
       - "--max-instances"
       - "5"
       - "--set-env-vars"
-      - "SPRING_PROFILES_ACTIVE=production,DB_URL=${_DB_URL},DB_USERNAME=${_DB_USERNAME},STRIPE_API_KEY=${_STRIPE_API_KEY},PAYMENT_INTERNAL_API_KEY=${_PAYMENT_INTERNAL_API_KEY},STRIPE_SUCCESS_URL=${_STRIPE_SUCCESS_URL},STRIPE_CANCEL_URL=${_STRIPE_CANCEL_URL},STRIPE_WEBHOOK_SECRET=${_STRIPE_WEBHOOK_SECRET}"
+      - "SPRING_PROFILES_ACTIVE=production,DB_URL=${_DB_URL},DB_USERNAME=${_DB_USERNAME},STRIPE_API_KEY=${_STRIPE_API_KEY},STRIPE_SUCCESS_URL=${_STRIPE_SUCCESS_URL},STRIPE_CANCEL_URL=${_STRIPE_CANCEL_URL},STRIPE_WEBHOOK_SECRET=${_STRIPE_WEBHOOK_SECRET}"
       - "--set-secrets"
       - "DB_PASSWORD=payment-service-db-password:latest"
 

@@ -5,7 +5,7 @@ Spring Boot microservice for payment onboarding and Stripe sandbox checkout.
 ## What This Service Does
 
 - Creates and stores Stripe customer IDs for users (idempotent flow).
-- Exposes a secure internal endpoint for service-to-service calls after user registration.
+- Exposes an internal endpoint for service-to-service calls after user registration.
 - Creates Stripe Checkout sessions for sandbox testing.
 - Handles Stripe webhook events to update payment status.
 - Runs as an independent Dockerized microservice for Choreo deployment.
@@ -15,7 +15,6 @@ Spring Boot microservice for payment onboarding and Stripe sandbox checkout.
 After a user is successfully registered in `userService`, `userService` should call:
 
 - `POST /api/internal/payments/customers`
-- Header: `X-Internal-Api-Key: <PAYMENT_INTERNAL_API_KEY>`
 
 Example payload:
 
@@ -55,7 +54,7 @@ If the same user is sent again, the endpoint returns the existing Stripe custome
 
 ## Environment Variables
 
-- `PORT` (default: `8080`)
+- `PORT` (default: `8085`)
 - `DB_URL`
 - `DB_USERNAME`
 - `DB_PASSWORD`
@@ -64,7 +63,6 @@ If the same user is sent again, the endpoint returns the existing Stripe custome
 - `STRIPE_SUCCESS_URL`
 - `STRIPE_CANCEL_URL`
 - `STRIPE_DEFAULT_CURRENCY` (default: `usd`)
-- `PAYMENT_INTERNAL_API_KEY`
 
 ## Run Locally
 
@@ -90,12 +88,11 @@ docker build -t payment-service:local .
 Run container:
 
 ```bash
-docker run -p 8080:8080 \
+docker run -p 8085:8085 \
   -e DB_URL="jdbc:postgresql://host.docker.internal:5432/ctse" \
   -e DB_USERNAME="postgres" \
   -e DB_PASSWORD="postgres" \
   -e STRIPE_API_KEY="sk_test_xxx" \
-  -e PAYMENT_INTERNAL_API_KEY="change-me" \
   payment-service:local
 ```
 
@@ -105,7 +102,7 @@ docker run -p 8080:8080 \
 2. In Choreo, create a new Service component from this repository path.
 3. Select Dockerfile-based build.
 4. Configure all required environment variables (especially secrets).
-5. Expose port `8080` and verify `/actuator/health`.
+5. Expose port `8085` and verify `/actuator/health`.
 
 ## DevSecOps Baseline
 
