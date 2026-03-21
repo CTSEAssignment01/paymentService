@@ -1,0 +1,47 @@
+{
+  "groups": [
+    {
+      "name": "payment.security",
+      "type": "com.example.paymentservice.config.PaymentSecurityProperties",
+      "sourceType": "com.example.paymentservice.config.PaymentSecurityProperties"
+    },
+    {
+      "name": "stripe",
+      "type": "com.example.paymentservice.config.StripeProperties",
+      "sourceType": "com.example.paymentservice.config.StripeProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "payment.security.internal-api-key",
+      "type": "java.lang.String",
+      "sourceType": "com.example.paymentservice.config.PaymentSecurityProperties"
+    },
+    {
+      "name": "stripe.api-key",
+      "type": "java.lang.String",
+      "sourceType": "com.example.paymentservice.config.StripeProperties"
+    },
+    {
+      "name": "stripe.cancel-url",
+      "type": "java.lang.String",
+      "sourceType": "com.example.paymentservice.config.StripeProperties"
+    },
+    {
+      "name": "stripe.default-currency",
+      "type": "java.lang.String",
+      "sourceType": "com.example.paymentservice.config.StripeProperties"
+    },
+    {
+      "name": "stripe.success-url",
+      "type": "java.lang.String",
+      "sourceType": "com.example.paymentservice.config.StripeProperties"
+    },
+    {
+      "name": "stripe.webhook-secret",
+      "type": "java.lang.String",
+      "sourceType": "com.example.paymentservice.config.StripeProperties"
+    }
+  ],
+  "hints": []
+}

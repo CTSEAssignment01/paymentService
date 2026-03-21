@@ -1,0 +1,56 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build"
+    args:
+      - "build"
+      - "-t"
+      - "us-central1-docker.pkg.dev/$PROJECT_ID/payment-service/app:$COMMIT_SHA"
+      - "-t"
+      - "us-central1-docker.pkg.dev/$PROJECT_ID/payment-service/app:latest"
+      - "."
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "push"
+    waitFor: ["build"]
+    args:
+      - "push"
+      - "--all-tags"
+      - "us-central1-docker.pkg.dev/$PROJECT_ID/payment-service/app"
+
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "deploy"
+    waitFor: ["push"]
+    entrypoint: "gcloud"
+    args:
+      - "run"
+      - "deploy"
+      - "payment-service"
+      - "--image"
+      - "us-central1-docker.pkg.dev/$PROJECT_ID/payment-service/app:$COMMIT_SHA"
+      - "--region"
+      - "us-central1"
+      - "--platform"
+      - "managed"
+      - "--allow-unauthenticated"
+      - "--port"
+      - "8080"
+      - "--memory"
+      - "512Mi"
+      - "--cpu"
+      - "1"
+      - "--min-instances"
+      - "0"
+      - "--max-instances"
+      - "5"
+      - "--set-env-vars"
+      - "SPRING_PROFILES_ACTIVE=production,DB_URL=${_DB_URL},DB_USERNAME=${_DB_USERNAME},STRIPE_API_KEY=${_STRIPE_API_KEY},PAYMENT_INTERNAL_API_KEY=${_PAYMENT_INTERNAL_API_KEY},STRIPE_SUCCESS_URL=${_STRIPE_SUCCESS_URL},STRIPE_CANCEL_URL=${_STRIPE_CANCEL_URL},STRIPE_WEBHOOK_SECRET=${_STRIPE_WEBHOOK_SECRET}"
+      - "--set-secrets"
+      - "DB_PASSWORD=payment-service-db-password:latest"
+
+images:
+  - "us-central1-docker.pkg.dev/$PROJECT_ID/payment-service/app:$COMMIT_SHA"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: "900s"
