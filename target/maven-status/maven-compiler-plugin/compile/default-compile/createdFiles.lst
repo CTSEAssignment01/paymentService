@@ -14,14 +14,12 @@ com\example\paymentservice\exception\ResourceNotFoundException.class
 com\example\paymentservice\dto\ProvisionCustomerRequest.class
 com\example\paymentservice\PaymentServiceApplication.class
 com\example\paymentservice\dto\CreateCheckoutSessionRequest.class
-com\example\paymentservice\config\CorsConfig.class
 com\example\paymentservice\exception\ExternalServiceException.class
 com\example\paymentservice\service\CheckoutService.class
 com\example\paymentservice\config\PaymentSecurityProperties.class
 com\example\paymentservice\exception\GlobalExceptionHandler.class
 com\example\paymentservice\service\PaymentProfileService.class
 com\example\paymentservice\model\PaymentProfile.class
-com\example\paymentservice\controller\DoctorController.class
 com\example\paymentservice\config\StripeProperties.class
-com\example\paymentservice\controller\SlotController.class
+com\example\paymentservice\dto\InternalCreatePaymentSessionRequest.class
 com\example\paymentservice\service\InternalAuthService.class

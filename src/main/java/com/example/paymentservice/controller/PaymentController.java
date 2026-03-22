@@ -2,6 +2,7 @@ package com.example.paymentservice.controller;
 
 import com.example.paymentservice.dto.CreateCheckoutSessionRequest;
 import com.example.paymentservice.dto.CreateCheckoutSessionResponse;
+import com.example.paymentservice.dto.PaymentTransactionResponse;
 import com.example.paymentservice.dto.PaymentProfileResponse;
 import com.example.paymentservice.service.CheckoutService;
 import com.example.paymentservice.service.PaymentProfileService;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -40,6 +42,16 @@ public class PaymentController {
             @Valid @RequestBody CreateCheckoutSessionRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(checkoutService.createCheckoutSession(request));
+    }
+
+    @GetMapping("/users/{userId}/transactions")
+    public ResponseEntity<List<PaymentTransactionResponse>> getUserTransactions(@PathVariable UUID userId) {
+        return ResponseEntity.ok(checkoutService.getTransactionsForUser(userId));
+    }
+
+    @PostMapping("/checkout-session/{sessionId}/confirm")
+    public ResponseEntity<PaymentTransactionResponse> confirmCheckoutSession(@PathVariable String sessionId) {
+        return ResponseEntity.ok(checkoutService.confirmCheckoutSession(sessionId));
     }
 
     @PostMapping("/webhooks/stripe")

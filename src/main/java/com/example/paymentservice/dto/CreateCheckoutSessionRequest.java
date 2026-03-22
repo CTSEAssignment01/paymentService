@@ -11,6 +11,7 @@ public record CreateCheckoutSessionRequest(
         @NotNull UUID userId,
         @NotNull @DecimalMin("0.50") BigDecimal amount,
         @NotBlank String description,
-        String currency
+        String currency,
+        UUID appointmentId
 ) {
 }

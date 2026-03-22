@@ -31,7 +31,7 @@ spring:
       schema-locations: classpath:schema.sql
 
 server:
-  port: ${PORT:8080}
+  port: ${PORT:8085}
 
 stripe:
   api-key: ${STRIPE_API_KEY:}
@@ -43,6 +43,7 @@ stripe:
 payment:
   security:
     internal-api-key: ${PAYMENT_INTERNAL_API_KEY:change-me-before-deploy}
+    internal-auth-enabled: ${PAYMENT_INTERNAL_AUTH_ENABLED:true}
 
 management:
   endpoints:

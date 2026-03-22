@@ -40,6 +40,11 @@ stripe:
   cancel-url: ${STRIPE_CANCEL_URL:http://localhost:5173/payment/cancel}
   default-currency: ${STRIPE_DEFAULT_CURRENCY:usd}
 
+payment:
+  security:
+    internal-api-key: ${PAYMENT_INTERNAL_API_KEY:change-me-before-deploy}
+    internal-auth-enabled: ${PAYMENT_INTERNAL_AUTH_ENABLED:true}
+
 management:
   endpoints:
     web:
