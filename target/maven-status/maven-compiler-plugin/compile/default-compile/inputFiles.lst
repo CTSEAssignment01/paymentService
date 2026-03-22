@@ -2,6 +2,7 @@ E:\CTSE_assignment\paymentService\src\main\java\com\example\paymentservice\contr
 E:\CTSE_assignment\paymentService\src\main\java\com\example\paymentservice\service\PaymentProfileService.java
 E:\CTSE_assignment\paymentService\src\main\java\com\example\paymentservice\exception\ResourceNotFoundException.java
 E:\CTSE_assignment\paymentService\src\main\java\com\example\paymentservice\dto\CreateCheckoutSessionRequest.java
+E:\CTSE_assignment\paymentService\src\main\java\com\example\paymentservice\dto\InternalCreatePaymentSessionRequest.java
 E:\CTSE_assignment\paymentService\src\main\java\com\example\paymentservice\exception\BadRequestException.java
 E:\CTSE_assignment\paymentService\src\main\java\com\example\paymentservice\service\CheckoutService.java
 E:\CTSE_assignment\paymentService\src\main\java\com\example\paymentservice\config\PaymentSecurityProperties.java

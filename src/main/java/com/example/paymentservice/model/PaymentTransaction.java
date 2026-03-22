@@ -23,6 +23,9 @@ public class PaymentTransaction {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "appointment_id")
+    private UUID appointmentId;
+
     @Column(name = "stripe_customer_id", nullable = false)
     private String stripeCustomerId;
 
@@ -62,6 +65,14 @@ public class PaymentTransaction {
 
     public void setUserId(UUID userId) {
         this.userId = userId;
+    }
+
+    public UUID getAppointmentId() {
+        return appointmentId;
+    }
+
+    public void setAppointmentId(UUID appointmentId) {
+        this.appointmentId = appointmentId;
     }
 
     public String getStripeCustomerId() {
