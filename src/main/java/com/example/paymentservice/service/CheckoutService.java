@@ -138,12 +138,13 @@ public class CheckoutService {
     }
 
     @Transactional(readOnly = true)
-    public List<PaymentTransactionResponse> getTransactionsForUser(UUID userId) {
-        return paymentTransactionRepository.findFinalTransactionsByUserIdOrderByCreatedAtDesc(userId, "COMPLETED")
-                .stream()
-                .map(this::toResponse)
-                .toList();
-    }
+public List<PaymentTransactionResponse> getTransactionsForUser(UUID userId) {
+    return paymentTransactionRepository
+            .findByUserIdAndStatusOrderByCreatedAtDesc(userId, "COMPLETED")
+            .stream()
+            .map(this::toResponse)
+            .toList();
+}
 
     @Transactional
     public PaymentTransactionResponse confirmCheckoutSession(String sessionId) {
