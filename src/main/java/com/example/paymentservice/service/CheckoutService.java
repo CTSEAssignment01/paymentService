@@ -8,7 +8,6 @@ import com.example.paymentservice.exception.BadRequestException;
 import com.example.paymentservice.exception.ExternalServiceException;
 import com.example.paymentservice.exception.ResourceNotFoundException;
 import com.example.paymentservice.model.PaymentProfile;
-import com.example.paymentservice.model.PaymentStatus;
 import com.example.paymentservice.model.PaymentTransaction;
 import com.example.paymentservice.repository.PaymentTransactionRepository;
 import com.stripe.exception.StripeException;
@@ -122,9 +121,9 @@ public class CheckoutService {
         Object stripeObject = dataObjectDeserializer.getObject().get();
         if (stripeObject instanceof Session session) {
             switch (event.getType()) {
-                case "checkout.session.completed" -> upsertFinalTransaction(session, PaymentStatus.COMPLETED);
-                case "checkout.session.expired" -> upsertFinalTransaction(session, PaymentStatus.EXPIRED);
-                case "checkout.session.async_payment_failed" -> upsertFinalTransaction(session, PaymentStatus.FAILED);
+                case "checkout.session.completed" -> upsertFinalTransaction(session, "COMPLETED");
+                case "checkout.session.expired" -> upsertFinalTransaction(session, "EXPIRED");
+                case "checkout.session.async_payment_failed" -> upsertFinalTransaction(session, "FAILED");
                 default -> {
                 }
             }
@@ -133,7 +132,7 @@ public class CheckoutService {
 
     @Transactional(readOnly = true)
     public List<PaymentTransactionResponse> getTransactionsForUser(UUID userId) {
-        return paymentTransactionRepository.findByUserIdOrderByCreatedAtDesc(userId)
+        return paymentTransactionRepository.findByUserIdAndStatusNotOrderByCreatedAtDesc(userId, "PENDING")
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -143,7 +142,7 @@ public class CheckoutService {
     public PaymentTransactionResponse confirmCheckoutSession(String sessionId) {
         try {
             Session session = Session.retrieve(sessionId);
-            PaymentStatus finalStatus = resolveFinalStatus(session);
+            String finalStatus = resolveFinalStatus(session);
 
             PaymentTransaction tx = paymentTransactionRepository.findByStripeSessionId(sessionId)
                     .orElseGet(() -> createTransactionFromSession(session, finalStatus));
@@ -156,7 +155,7 @@ public class CheckoutService {
         }
     }
 
-    private void upsertFinalTransaction(Session session, PaymentStatus finalStatus) {
+    private void upsertFinalTransaction(Session session, String finalStatus) {
         try {
             PaymentTransaction tx = paymentTransactionRepository.findByStripeSessionId(session.getId())
                     .orElseGet(() -> createTransactionFromSession(session, finalStatus));
@@ -167,7 +166,7 @@ public class CheckoutService {
         }
     }
 
-    private PaymentTransaction createTransactionFromSession(Session session, PaymentStatus status) {
+    private PaymentTransaction createTransactionFromSession(Session session, String status) {
         Map<String, String> metadata = session.getMetadata();
         if (metadata == null || metadata.get("userId") == null || metadata.get("userId").isBlank()) {
             throw new BadRequestException("Cannot create transaction: missing user information in session metadata");
@@ -193,18 +192,18 @@ public class CheckoutService {
         return tx;
     }
 
-    private PaymentStatus resolveFinalStatus(Session session) {
+    private String resolveFinalStatus(Session session) {
         String paymentStatus = session.getPaymentStatus();
         String sessionStatus = session.getStatus();
 
         if ("paid".equalsIgnoreCase(paymentStatus)) {
-            return PaymentStatus.COMPLETED;
+            return "COMPLETED";
         }
         if ("expired".equalsIgnoreCase(sessionStatus)) {
-            return PaymentStatus.EXPIRED;
+            return "EXPIRED";
         }
         if ("unpaid".equalsIgnoreCase(paymentStatus)) {
-            return PaymentStatus.FAILED;
+            return "FAILED";
         }
 
         throw new BadRequestException("Payment is not completed yet");
@@ -219,7 +218,7 @@ public class CheckoutService {
                 tx.getAmount(),
                 tx.getCurrency(),
                 tx.getDescription(),
-                tx.getStatus().name(),
+                tx.getStatus(),
                 tx.getCreatedAt(),
                 tx.getUpdatedAt()
         );
