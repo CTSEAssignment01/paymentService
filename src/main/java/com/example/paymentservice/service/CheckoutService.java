@@ -87,6 +87,7 @@ public class CheckoutService {
 
             Session stripeSession = Session.create(params);
 
+
             PaymentTransaction tx = new PaymentTransaction();
             tx.setUserId(request.userId());
             tx.setAppointmentId(request.appointmentId());
