@@ -2,8 +2,6 @@ package com.example.paymentservice.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -41,9 +39,8 @@ public class PaymentTransaction {
     @Column(name = "description")
     private String description;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)
-    private PaymentStatus status;
+    private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -115,11 +112,11 @@ public class PaymentTransaction {
         this.description = description;
     }
 
-    public PaymentStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(PaymentStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
