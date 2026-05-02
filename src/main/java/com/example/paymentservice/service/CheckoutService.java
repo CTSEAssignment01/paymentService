@@ -8,7 +8,6 @@ import com.example.paymentservice.exception.BadRequestException;
 import com.example.paymentservice.exception.ExternalServiceException;
 import com.example.paymentservice.exception.ResourceNotFoundException;
 import com.example.paymentservice.model.PaymentProfile;
-import com.example.paymentservice.model.PaymentStatus;
 import com.example.paymentservice.model.PaymentTransaction;
 import com.example.paymentservice.repository.PaymentTransactionRepository;
 import com.stripe.exception.StripeException;
@@ -25,6 +24,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -50,7 +50,6 @@ public class CheckoutService {
         log.info("Creating checkout session for userId={}, amount={}, currency={}", request.userId(), request.amount(), request.currency());
 
         PaymentProfile profile = paymentProfileService.getEntityByUserId(request.userId());
-
         String currency = request.currency() == null || request.currency().isBlank()
                 ? stripeProperties.defaultCurrency()
                 : request.currency().toLowerCase(Locale.ROOT);
@@ -63,6 +62,11 @@ public class CheckoutService {
                     .setCustomer(profile.getStripeCustomerId())
                     .setSuccessUrl(stripeProperties.successUrl())
                     .setCancelUrl(stripeProperties.cancelUrl())
+                    .putMetadata("userId", request.userId().toString())
+                    .putMetadata("appointmentId", request.appointmentId() != null ? request.appointmentId().toString() : "")
+                    .putMetadata("currency", currency)
+                    .putMetadata("description", request.description())
+                    .putMetadata("amount", request.amount().toPlainString())
                     .addLineItem(
                             SessionCreateParams.LineItem.builder()
                                     .setQuantity(1L)
@@ -83,27 +87,21 @@ public class CheckoutService {
 
             Session stripeSession = Session.create(params);
 
-            PaymentTransaction tx = new PaymentTransaction();
-            tx.setUserId(request.userId());
-            tx.setAppointmentId(request.appointmentId());
-            tx.setStripeCustomerId(profile.getStripeCustomerId());
-            tx.setStripeSessionId(stripeSession.getId());
-            tx.setAmount(request.amount().setScale(2, RoundingMode.HALF_UP));
-            tx.setCurrency(currency);
-            tx.setDescription(request.description());
-            tx.setStatus(PaymentStatus.PENDING);
-            paymentTransactionRepository.save(tx);
+log.info("Checkout session created successfully: {}", stripeSession.getId());
 
-            log.info("Checkout session created successfully: {}", stripeSession.getId());
-            return new CreateCheckoutSessionResponse(stripeSession.getId(), stripeSession.getUrl(), PaymentStatus.PENDING.name());
-        } catch (StripeException ex) {
-            log.error("Stripe error while creating checkout session", ex);
-            throw new ExternalServiceException("Failed to create Stripe checkout session", ex);
-        } catch (Exception ex) {
-            log.error("Unexpected error while creating checkout session", ex);
-            throw new ExternalServiceException("Failed to create checkout session", ex);
-        }
-    }
+return new CreateCheckoutSessionResponse(
+        stripeSession.getId(),
+        stripeSession.getUrl(),
+        "CREATED"
+);
+
+} catch (StripeException ex) {
+    log.error("Stripe error while creating checkout session", ex);
+    throw new ExternalServiceException("Failed to create Stripe checkout session", ex);
+} catch (Exception ex) {
+    log.error("Unexpected error while creating checkout session", ex);
+    throw new ExternalServiceException("Failed to create checkout session", ex);
+}
 
     @Transactional
     public void handleStripeWebhook(String payload, String signatureHeader) {
@@ -128,23 +126,19 @@ public class CheckoutService {
 
         Object stripeObject = dataObjectDeserializer.getObject().get();
         if (stripeObject instanceof Session session) {
-            paymentTransactionRepository.findByStripeSessionId(session.getId()).ifPresent(tx -> {
-                switch (event.getType()) {
-                    case "checkout.session.completed" -> tx.setStatus(PaymentStatus.COMPLETED);
-                    case "checkout.session.expired" -> tx.setStatus(PaymentStatus.EXPIRED);
-                    case "checkout.session.async_payment_failed" -> tx.setStatus(PaymentStatus.FAILED);
-                    default -> {
-                        return;
-                    }
+            switch (event.getType()) {
+                case "checkout.session.completed" -> upsertFinalTransaction(session, "COMPLETED");
+                case "checkout.session.expired" -> upsertFinalTransaction(session, "EXPIRED");
+                case "checkout.session.async_payment_failed" -> upsertFinalTransaction(session, "FAILED");
+                default -> {
                 }
-                paymentTransactionRepository.save(tx);
-            });
+            }
         }
     }
 
     @Transactional(readOnly = true)
     public List<PaymentTransactionResponse> getTransactionsForUser(UUID userId) {
-        return paymentTransactionRepository.findByUserIdOrderByCreatedAtDesc(userId)
+        return paymentTransactionRepository.findFinalTransactionsByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -152,29 +146,73 @@ public class CheckoutService {
 
     @Transactional
     public PaymentTransactionResponse confirmCheckoutSession(String sessionId) {
-        PaymentTransaction tx = paymentTransactionRepository.findByStripeSessionId(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment transaction not found for session: " + sessionId));
-
         try {
             Session session = Session.retrieve(sessionId);
-            String paymentStatus = session.getPaymentStatus();
-            String sessionStatus = session.getStatus();
+            String finalStatus = resolveFinalStatus(session);
 
-            if ("paid".equalsIgnoreCase(paymentStatus)) {
-                tx.setStatus(PaymentStatus.COMPLETED);
-            } else if ("expired".equalsIgnoreCase(sessionStatus)) {
-                tx.setStatus(PaymentStatus.EXPIRED);
-            } else if ("unpaid".equalsIgnoreCase(paymentStatus)) {
-                tx.setStatus(PaymentStatus.FAILED);
-            } else {
-                tx.setStatus(PaymentStatus.PENDING);
-            }
+            PaymentTransaction tx = paymentTransactionRepository.findByStripeSessionId(sessionId)
+                    .orElseGet(() -> createTransactionFromSession(session, finalStatus));
+            tx.setStatus(finalStatus);
+
+            PaymentTransaction saved = paymentTransactionRepository.save(tx);
+            return toResponse(saved);
         } catch (StripeException ex) {
             throw new ExternalServiceException("Failed to verify checkout session with Stripe", ex);
         }
+    }
 
-        PaymentTransaction saved = paymentTransactionRepository.save(tx);
-        return toResponse(saved);
+    private void upsertFinalTransaction(Session session, String finalStatus) {
+        try {
+            PaymentTransaction tx = paymentTransactionRepository.findByStripeSessionId(session.getId())
+                    .orElseGet(() -> createTransactionFromSession(session, finalStatus));
+            tx.setStatus(finalStatus);
+            paymentTransactionRepository.save(tx);
+        } catch (Exception ex) {
+            log.error("Failed to persist final transaction for sessionId={}", session.getId(), ex);
+        }
+    }
+
+    private PaymentTransaction createTransactionFromSession(Session session, String status) {
+        Map<String, String> metadata = session.getMetadata();
+        if (metadata == null || metadata.get("userId") == null || metadata.get("userId").isBlank()) {
+            throw new BadRequestException("Cannot create transaction: missing user information in session metadata");
+        }
+
+        UUID userId = UUID.fromString(metadata.get("userId"));
+        UUID appointmentId = metadata.containsKey("appointmentId") && !metadata.get("appointmentId").isBlank()
+                ? UUID.fromString(metadata.get("appointmentId"))
+                : null;
+        String currency = metadata.getOrDefault("currency", "usd");
+        String description = metadata.getOrDefault("description", "Payment");
+        BigDecimal amount = new BigDecimal(metadata.getOrDefault("amount", "0"));
+
+        PaymentTransaction tx = new PaymentTransaction();
+        tx.setUserId(userId);
+        tx.setAppointmentId(appointmentId);
+        tx.setStripeCustomerId(session.getCustomer());
+        tx.setStripeSessionId(session.getId());
+        tx.setAmount(amount.setScale(2, RoundingMode.HALF_UP));
+        tx.setCurrency(currency);
+        tx.setDescription(description);
+        tx.setStatus(status);
+        return tx;
+    }
+
+    private String resolveFinalStatus(Session session) {
+        String paymentStatus = session.getPaymentStatus();
+        String sessionStatus = session.getStatus();
+
+        if ("paid".equalsIgnoreCase(paymentStatus)) {
+            return "COMPLETED";
+        }
+        if ("expired".equalsIgnoreCase(sessionStatus)) {
+            return "EXPIRED";
+        }
+        if ("unpaid".equalsIgnoreCase(paymentStatus)) {
+            return "FAILED";
+        }
+
+        throw new BadRequestException("Payment is not completed yet");
     }
 
     private PaymentTransactionResponse toResponse(PaymentTransaction tx) {
@@ -186,7 +224,7 @@ public class CheckoutService {
                 tx.getAmount(),
                 tx.getCurrency(),
                 tx.getDescription(),
-                tx.getStatus().name(),
+                tx.getStatus(),
                 tx.getCreatedAt(),
                 tx.getUpdatedAt()
         );
