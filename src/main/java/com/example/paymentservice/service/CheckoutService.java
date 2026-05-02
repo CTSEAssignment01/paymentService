@@ -86,6 +86,18 @@ public class CheckoutService {
                     .build();
 
             Session stripeSession = Session.create(params);
+
+            PaymentTransaction tx = new PaymentTransaction();
+            tx.setUserId(request.userId());
+            tx.setAppointmentId(request.appointmentId());
+            tx.setStripeCustomerId(profile.getStripeCustomerId());
+            tx.setStripeSessionId(stripeSession.getId());
+            tx.setAmount(request.amount().setScale(2, RoundingMode.HALF_UP));
+            tx.setCurrency(currency);
+            tx.setDescription(request.description());
+            tx.setStatus("CREATED");
+            paymentTransactionRepository.save(tx);
+
             log.info("Checkout session created successfully: {}", stripeSession.getId());
             return new CreateCheckoutSessionResponse(stripeSession.getId(), stripeSession.getUrl(), "CREATED");
         } catch (StripeException ex) {
@@ -132,7 +144,7 @@ public class CheckoutService {
 
     @Transactional(readOnly = true)
     public List<PaymentTransactionResponse> getTransactionsForUser(UUID userId) {
-        return paymentTransactionRepository.findByUserIdAndStatusNotOrderByCreatedAtDesc(userId, "PENDING")
+        return paymentTransactionRepository.findFinalTransactionsByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(this::toResponse)
                 .toList();
