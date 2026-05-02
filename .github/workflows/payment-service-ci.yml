@@ -11,9 +11,11 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: paymentService
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,10 +33,14 @@ jobs:
   snyk-sast:
     runs-on: ubuntu-latest
     needs: build-test
-    if: ${{ secrets.SNYK_TOKEN != '' }}
+
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
     defaults:
       run:
         working-directory: paymentService
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,8 +53,9 @@ jobs:
           cache: maven
 
       - name: Snyk test
+        if: ${{ env.SNYK_TOKEN != '' }}
         uses: snyk/actions/maven@master
         env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
