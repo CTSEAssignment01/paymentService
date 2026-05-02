@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: payment-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ctse}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      initialization-fail-timeout: -1
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: payment
+        format_sql: true
+
+  sql:
+    init:
+      mode: never
+      schema-locations: classpath:schema.sql
+
+server:
+  port: 8080
+
+stripe:
+  api-key: ${STRIPE_API_KEY:}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  success-url: ${STRIPE_SUCCESS_URL:http://localhost:5173/payment/success?session_id={CHECKOUT_SESSION_ID}}
+  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:5173/payment/cancel}
+  default-currency: ${STRIPE_DEFAULT_CURRENCY:usd}
+
+payment:
+  security:
+    internal-api-key: ${PAYMENT_INTERNAL_API_KEY:change-me-before-deploy}
+    internal-auth-enabled: ${PAYMENT_INTERNAL_AUTH_ENABLED:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.example.paymentservice: INFO
+    org.springframework.web: INFO

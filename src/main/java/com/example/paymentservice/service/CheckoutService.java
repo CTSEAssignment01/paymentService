@@ -145,9 +145,10 @@ public class CheckoutService {
     @Transactional(readOnly = true)
     public List<PaymentTransactionResponse> getTransactionsForUser(UUID userId) {
         return paymentTransactionRepository.findByUserIdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+            .stream()
+            .filter(tx -> tx.getStatus() != PaymentStatus.PENDING)
+            .map(this::toResponse)
+            .toList();
     }
 
     @Transactional
