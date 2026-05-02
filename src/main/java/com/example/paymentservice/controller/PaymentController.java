@@ -37,11 +37,24 @@ public class PaymentController {
         return ResponseEntity.ok(paymentProfileService.getByUserId(userId));
     }
 
-    @PostMapping("/checkout-session")
+    // @PostMapping("/checkout-session")
+    // public ResponseEntity<CreateCheckoutSessionResponse> createCheckoutSession(
+    //         @Valid @RequestBody CreateCheckoutSessionRequest request
+    // ) {
+    //     return ResponseEntity.status(HttpStatus.CREATED).body(checkoutService.createCheckoutSession(request));
+    // }
+    @PostMapping("/internal/payments/sessions")
     public ResponseEntity<CreateCheckoutSessionResponse> createCheckoutSession(
+            @RequestHeader("X-Internal-Api-Key") String apiKey,
             @Valid @RequestBody CreateCheckoutSessionRequest request
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(checkoutService.createCheckoutSession(request));
+        // simple key check
+        if (!apiKey.equals(System.getenv("INTERNAL_API_KEY"))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                            .body(checkoutService.createCheckoutSession(request));
     }
 
     @GetMapping("/users/{userId}/transactions")

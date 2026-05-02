@@ -54,7 +54,7 @@ If the same user is sent again, the endpoint returns the existing Stripe custome
 
 ## Environment Variables
 
-- `PORT` (default: `8085`)
+- `PORT` (default: `8080`)
 - `DB_URL`
 - `DB_USERNAME`
 - `DB_PASSWORD`
@@ -88,7 +88,7 @@ docker build -t payment-service:local .
 Run container:
 
 ```bash
-docker run -p 8085:8085 \
+docker run -p 8080:8080 \
   -e DB_URL="jdbc:postgresql://host.docker.internal:5432/ctse" \
   -e DB_USERNAME="postgres" \
   -e DB_PASSWORD="postgres" \
@@ -102,7 +102,7 @@ docker run -p 8085:8085 \
 2. In Choreo, create a new Service component from this repository path.
 3. Select Dockerfile-based build.
 4. Configure all required environment variables (especially secrets).
-5. Expose port `8085` and verify `/actuator/health`.
+5. Expose port `8080` and verify `/actuator/health`.
 
 ## DevSecOps Baseline
 
