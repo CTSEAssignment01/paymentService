@@ -87,27 +87,21 @@ public class CheckoutService {
 
             Session stripeSession = Session.create(params);
 
-            PaymentTransaction tx = new PaymentTransaction();
-            tx.setUserId(request.userId());
-            tx.setAppointmentId(request.appointmentId());
-            tx.setStripeCustomerId(profile.getStripeCustomerId());
-            tx.setStripeSessionId(stripeSession.getId());
-            tx.setAmount(request.amount().setScale(2, RoundingMode.HALF_UP));
-            tx.setCurrency(currency);
-            tx.setDescription(request.description());
-            tx.setStatus("CREATED");
-            paymentTransactionRepository.save(tx);
+log.info("Checkout session created successfully: {}", stripeSession.getId());
 
-            log.info("Checkout session created successfully: {}", stripeSession.getId());
-            return new CreateCheckoutSessionResponse(stripeSession.getId(), stripeSession.getUrl(), "CREATED");
-        } catch (StripeException ex) {
-            log.error("Stripe error while creating checkout session", ex);
-            throw new ExternalServiceException("Failed to create Stripe checkout session", ex);
-        } catch (Exception ex) {
-            log.error("Unexpected error while creating checkout session", ex);
-            throw new ExternalServiceException("Failed to create checkout session", ex);
-        }
-    }
+return new CreateCheckoutSessionResponse(
+        stripeSession.getId(),
+        stripeSession.getUrl(),
+        "CREATED"
+);
+
+} catch (StripeException ex) {
+    log.error("Stripe error while creating checkout session", ex);
+    throw new ExternalServiceException("Failed to create Stripe checkout session", ex);
+} catch (Exception ex) {
+    log.error("Unexpected error while creating checkout session", ex);
+    throw new ExternalServiceException("Failed to create checkout session", ex);
+}
 
     @Transactional
     public void handleStripeWebhook(String payload, String signatureHeader) {
